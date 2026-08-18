@@ -1,33 +1,41 @@
-name: DevOps App CI Pipeline
+name: Production CI/CD Pipeline
 
-# Trigger Event: Jab bhi main branch par code push ho
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  build-and-test:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Repository se code checkout karna
+      # 1. Checkout repository code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Node.js Environment Setup
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # 2. Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. Log in to Docker Hub using GitHub Secrets
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          node-version: '18'
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3. Dependencies Install Karna
-      - name: Install Dependencies
-        run: npm install
+      # 4. Build and Push Docker Image (my-app)
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/my-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/my-app:${{ github.sha }}
 
-      # 4. Echo Status
-      - name: Print Pipeline Status
-        run: echo "Code checkout and dependencies installation successful!"
+      # 5. Pipeline Completion Summary
+      - name: Pipeline Success
+        run: echo "Docker Image 'my-app' successfully built and pushed to Docker Hub!"

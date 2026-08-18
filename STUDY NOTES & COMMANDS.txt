@@ -1,0 +1,187 @@
+====================================================================
+               MY FIRST DEVOPS APP - STUDY NOTES & COMMANDS
+====================================================================
+
+1. DOCKER & CONTAINERIZATION
+--------------------------------------------------------------------
+Explanation:
+Application aur uski dependencies ko ek lightweight container mein 
+package karne ke liye Docker ka use karte hain.
+
+Key Files:
+- index.html : Web application code / frontend.
+- Dockerfile : Image build karne ka step-by-step instruction set.
+
+Commands:
+# Image build karna
+docker build -t my-devops-app:v1 .
+
+# Container run karna locally
+docker run -d -p 8080:80 --name my-app my-devops-app:v1
+
+# Docker Hub par push karna
+docker tag my-devops-app:v1 your-username/my-devops-app:v1
+docker push your-username/my-devops-app:v1
+
+
+2. KUBERNETES OBJECTS (K8s)
+--------------------------------------------------------------------
+Explanation:
+Containerized applications ko auto-scale, manage, aur high-availability 
+dena ke liye Kubernetes (K8s) manifests ka use karte hain.
+
+Core Manifest Files & Purpose:
+- nginx-config.yaml    : ConfigMap (Non-sensitive configuration settings).
+- nginx-secret.yaml    : Secret (Passwords aur API keys base64 encoded).
+- nginx-pvc.yaml       : PersistentVolumeClaim (Storage request karna).
+- nginx-deployment.yaml: Pods manage karna, replicas control karna.
+- nginx-service.yaml   : Networking aur internal/external traffic access.
+- nginx-ingress.yaml   : Domain-based routing (HTTP/HTTPS traffic).
+
+Basic Kubectl Commands:
+# Resources apply karna
+kubectl apply -f K8s/
+
+# Status check karna
+kubectl get pods
+kubectl get deployments
+kubectl get services
+kubectl get pvc
+
+
+3. HELM PACKAGE MANAGEMENT
+--------------------------------------------------------------------
+Explanation:
+Kubernetes YAML manifests ko reusable templates mein convert karke 
+manage aur deploy karne ke liye Helm ka use hota hai.
+
+Key Structure:
+- my-app-chart/Chart.yaml : Chart ki details/metadata.
+- my-app-chart/values.yaml: Dynamic values store karne ke liye.
+- my-app-chart/templates/  : Parameterized K8s manifests.
+
+Helm Commands:
+# Syntax test / Dry run
+helm template ./my-app-chart
+
+# Chart install karna
+helm install my-app-release ./my-app-chart
+
+# Status check karna
+helm list
+
+# Upgrade & Rollback
+helm upgrade my-app-release ./my-app-chart
+helm rollback my-app-release 1
+
+
+4. KUBERNETES NAMESPACES
+--------------------------------------------------------------------
+Explanation:
+Ek hi physical cluster ko logically multiple virtual clusters mein 
+divide (isolate) karne ke liye Namespaces ka use hota hai (e.g., dev, prod).
+
+Namespace Setup in Helm (templates/*.yaml):
+metadata:
+  name: {{ .Release.Name }}-deployment
+  namespace: {{ .Values.namespace | default .Release.Namespace }}
+
+Commands:
+# Namespace create karna
+kubectl create namespace dev
+kubectl create namespace prod
+
+# Dev environment mein deploy karna
+helm install my-app-dev ./my-app-chart --namespace dev
+
+# Prod environment mein deploy karna
+helm install my-app-prod ./my-app-chart --namespace prod
+
+# Isolated pods check karna
+kubectl get pods -n dev
+kubectl get pods -n prod
+
+# Saare releases check karna across all namespaces
+helm list -A
+====================================================================
+5. KUBERNETES INGRESS CONTROLLER
+--------------------------------------------------------------------
+Explanation:
+Single IP / Domain Name ke zariye traffic ko path-based routing (/ aur /api) 
+karke Services aur Pods tak pahunchane ke liye Ingress use hota hai.
+
+Key Concepts:
+- Ingress Resource   : Routing rules definition file (nginx-ingress.yaml).
+- Ingress Controller : Actual load balancer pod (NGINX) jo rules evaluate karta hai.
+
+Commands:
+# Ingress enable / patch karna
+helm upgrade my-app-dev ./my-app-chart -n dev --set ingress.enabled=true --set ingress.className=nginx
+
+# Ingress status aur assigned IP/Host check karna
+kubectl get ingress -n dev
+
+=========================================================================
+6. KUBERNETES RBAC (ROLE-BASED ACCESS CONTROL)
+--------------------------------------------------------------------
+Explanation:
+Users aur ServiceAccounts ko granular access rights/permissions dene ke 
+liye RBAC ka use hota hai.
+
+Components:
+- Role / ClusterRole     : Set of permissions (e.g., get, list, watch pods).
+- RoleBinding            : Role ko user / service account ke saath link karna.
+
+Useful Commands:
+# Check Roles & RoleBindings
+kubectl get roles -n dev
+kubectl get rolebindings -n dev
+
+# Test permissions without switching user context
+kubectl auth can-i list pods -n dev --as=system:serviceaccount:dev:default
+====================================================================
+7. TERRAFORM (INFRASTRUCTURE AS CODE - IaC)
+--------------------------------------------------------------------
+Explanation:
+Cloud Infrastructure (VMs, Clusters, Containers, Networks) ko code 
+(`.tf` files) ke zariye automate aur manage karne ke liye Terraform use hota hai.
+
+Core Workflow:
+1. terraform init    : Download required provider plugins (e.g. AWS, Docker).
+2. terraform plan    : Preview infrastructure changes before applying (Dry run).
+3. terraform apply   : Execute code and create real infrastructure.
+4. terraform destroy : Delete/clean up all created resources in 1 command.
+
+Key Concepts:
+- HCL (HashiCorp Configuration Language) : Syntax used in .tf files.
+- Providers          : Plugins that interact with APIs (AWS, Azure, Docker, K8s).
+- Resources          : Infrastructure components to be created (e.g., docker_container).
+- terraform.tfstate  : File tracking real-world infrastructure state.
+
+Commands:
+cd terraform
+terraform init
+terraform plan
+terraform apply
+terraform destroy
+====================================================================
+8. TERRAFORM + KUBERNETES INTEGRATION
+--------------------------------------------------------------------
+Explanation:
+Kubernetes Manifests (Namespaces, Deployments, Services) ko YAML ke 
+badle Terraform HCL se deploy/manage karna.
+
+Key Provider:
+hashicorp/kubernetes (Uses local ~/.kube/config to authenticate)
+
+Key Concepts:
+- Declaring K8s objects as Terraform Resources (e.g. kubernetes_namespace, kubernetes_deployment)
+- State-driven modifications (e.g. changing replicas in HCL updates K8s directly)
+
+Useful Commands:
+terraform init
+terraform plan
+terraform apply
+kubectl get pods -n terraform-dev
+terraform destroy
+====================================================================

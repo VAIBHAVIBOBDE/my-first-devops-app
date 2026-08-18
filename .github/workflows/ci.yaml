@@ -1,0 +1,33 @@
+name: DevOps App CI Pipeline
+
+# Trigger Event: Jab bhi main branch par code push ho
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Repository se code checkout karna
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Node.js Environment Setup
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. Dependencies Install Karna
+      - name: Install Dependencies
+        run: npm install
+
+      # 4. Echo Status
+      - name: Print Pipeline Status
+        run: echo "Code checkout and dependencies installation successful!"
